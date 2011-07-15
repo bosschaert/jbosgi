@@ -41,13 +41,26 @@ import org.osgi.framework.BundleContext;
  * This Benchmark tests how much time it takes to install and start bundles in a number of class-spaces. It creates the
  * following configuration:
  *
- * 5 (Versioned) Common Bundles - Exports org.jboss.osgi.test.common;version=x 5 Numbered (but not versioned) Util Bundles -
- * Imports org.jboss.osgi.test.common;version=[x,x] - Exports org.jboss.osgi.test.util[x];uses="org.jboss.osgi.test.common" 5
- * Versioned Interfaces Bundles - Exports org.jboss.osgi.test.versioned;version=x 5 Versioned Impl Bundles - Imports
- * org.jboss.osgi.test.common;version=[x,x] - Imports org.jboss.osgi.test.versioned;version=[x,x] - Imports
- * org.jboss.osgi.test.util[x] - Exports org.jboss.osgi.test.versioned.impl;version=x;uses=org.jboss.osgi.test.util[x] a large
- * number of test bundles - Imports org.jboss.osgi.test.common;version=[x,x] - Imports
- * org.jboss.osgi.test.versioned;version=[x,x] - Imports org.jboss.osgi.test.versioned.impl;version=[x,x]
+ * 5 (Versioned) Common Bundles
+ * - Exports org.jboss.osgi.test.common;version=x
+ *
+ * 5 Numbered (but not versioned) Util Bundles
+ * - Imports org.jboss.osgi.test.common;version=[x,x]
+ * - Exports org.jboss.osgi.test.util[x];uses="org.jboss.osgi.test.common"
+ *
+ * 5 Versioned Interfaces Bundles
+ * - Exports org.jboss.osgi.test.versioned;version=x
+ *
+ * 5 Versioned Impl Bundles
+ * - Imports org.jboss.osgi.test.common;version=[x,x]
+ * - Imports org.jboss.osgi.test.versioned;version=[x,x]
+ * - Imports org.jboss.osgi.test.util[x]
+ * - Exports org.jboss.osgi.test.versioned.impl;version=x;uses=org.jboss.osgi.test.util[x]
+ *
+ * a large number of test bundles
+ * - Imports org.jboss.osgi.test.common;version=[x,x]
+ * - Imports org.jboss.osgi.test.versioned;version=[x,x]
+ * - Imports org.jboss.osgi.test.versioned.impl;version=[x,x]
  *
  * Each test bundle loads a class of each of its 3 dependency packages in its activator. This also triggers an indirect load on
  * the Util[x] class.

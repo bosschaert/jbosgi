@@ -126,7 +126,7 @@ public class TestBundleProviderImpl implements TestBundleProvider {
     private InputStream getVersionedImplBundle(String name, int idx,
             String prefix) throws IOException, FileNotFoundException {
         int version = Integer.parseInt(name.substring(idx + 1));
-        File exploded = getRawBundleDir(prefix + "Util" + ((version % 5) + 1));
+        File exploded = getRawBundleDir(prefix + "Util" + (((version - 1) % 5) + 1));
 
         Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
         Attributes attrs = mf.getMainAttributes();
