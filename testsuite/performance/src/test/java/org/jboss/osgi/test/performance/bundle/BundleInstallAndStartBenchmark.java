@@ -60,11 +60,12 @@ import org.osgi.framework.BundleContext;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public class BundleInstallAndStartBenchmark extends AbstractThreadedBenchmark<Integer> {
-    public static final String COMMON_BUNDLE_PREFIX = "commonBundle#";
-    public static final String UTIL_BUNDLE_PREFIX = "utilBundle#";
-    public static final String VERSIONED_IMPL_BUNDLE_PREFIX = "versionedImplBundle#";
-    public static final String VERSIONED_INTF_BUNDLE_PREFIX = "versionedIntfBundle#";
-    public static final String TEST_BUNDLE_PREFIX = "testBundle#";
+    public static final String PREFIX_SEPARATOR = "_";
+    public static final String COMMON_BUNDLE_PREFIX = "commonBundle" + PREFIX_SEPARATOR;
+    public static final String UTIL_BUNDLE_PREFIX = "utilBundle" + PREFIX_SEPARATOR;
+    public static final String VERSIONED_IMPL_BUNDLE_PREFIX = "versionedImplBundle" + PREFIX_SEPARATOR;
+    public static final String VERSIONED_INTF_BUNDLE_PREFIX = "versionedIntfBundle" + PREFIX_SEPARATOR;
+    public static final String TEST_BUNDLE_PREFIX = "testBundle" + PREFIX_SEPARATOR;
 
     private static final ChartType INSTALL_START = new ChartTypeImpl("IS", "Bundle Install and Start Time", "Number of Bundles", "Time (ms)");
     private final File bundleStorage;

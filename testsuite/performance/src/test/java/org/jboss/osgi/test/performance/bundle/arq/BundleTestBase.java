@@ -20,17 +20,23 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 package org.jboss.osgi.test.performance.bundle.arq;
-
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.COMMON_BUNDLE_PREFIX;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.TEST_BUNDLE_PREFIX;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.UTIL_BUNDLE_PREFIX;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.VERSIONED_IMPL_BUNDLE_PREFIX;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.VERSIONED_INTF_BUNDLE_PREFIX;
 
+import java.io.File;
 import java.io.InputStream;
 
+import org.jboss.arquillian.container.test.api.Deployer;
+import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.osgi.test.common.CommonClass;
+import org.jboss.osgi.test.performance.Parameter;
+import org.jboss.osgi.test.performance.arq.AbstractPerformanceTestCase;
+import org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark;
 import org.jboss.osgi.test.performance.bundle.BundlePerfTestActivator;
+import org.jboss.osgi.test.performance.bundle.TestBundleProvider;
 import org.jboss.osgi.test.util1.Util1;
 import org.jboss.osgi.test.util2.Util2;
 import org.jboss.osgi.test.util3.Util3;
@@ -42,33 +48,76 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.osgi.framework.BundleContext;
 
 /**
+ * This is the base class for the Bundle Performance tests. The actual testing is delegated to the
+ * {@link BundleInstallAndStartBenchmark}.
+ * <p/>
+ *
+ * This test is abstract. Every population is isolated in a unique subclass. This is to enable maven to run every test in a
+ * separate VM (when forkMode=always is specified).
+ *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class BundleArchiveProvider {
-    public JavaArchive getTestArchive(String name) {
-        if (name.startsWith(TEST_BUNDLE_PREFIX))
-            return getTestBundle(name);
-        else if (name.startsWith(COMMON_BUNDLE_PREFIX))
-            return getCommonBundle(name);
-        else if (name.startsWith(UTIL_BUNDLE_PREFIX))
-            return getUtilBundle(name);
-        else if (name.startsWith(VERSIONED_INTF_BUNDLE_PREFIX))
-            return getVersionedIntfBundle(name);
-        else if (name.startsWith(VERSIONED_IMPL_BUNDLE_PREFIX))
-            return getVersionedImplBundle(name);
-        return null;
+public abstract class BundleTestBase extends AbstractPerformanceTestCase {
+    static final String VERSION_UNDEFINED = "999999999";
+
+    @Deployment
+    public static JavaArchive createDeployment() {
+        final JavaArchive archive = getTestBundleArchive();
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleManifestVersion(2);
+                builder.addExportPackages(BundleTestBase.class);
+                builder.addImportPackages("org.jboss.arquillian.junit", "org.jboss.logging");
+                // builder.addImportPackages("org.jboss.shrinkwrap.api", "org.jboss.shrinkwrap.api.spec");
+                builder.addImportPackages("org.junit", "org.junit.runner");
+                builder.addImportPackages("org.osgi.framework", "org.osgi.util.tracker");
+                builder.addImportPackages("javax.inject");
+                builder.addImportPackages("org.jboss.osgi.testing");
+                return builder.openStream();
+            }
+        });
+        archive.addClasses(BundleTestBase.class, TestBundleProvider.class);
+        archive.addClasses(BundlePerfTestActivator.class, BundleInstallAndStartBenchmark.class);
+        archive.addClasses(TestBundleProviderImpl.class);
+        archive.addClasses(CommonClass.class, VersionedInterface.class, VersionedClass.class);
+        archive.addClasses(Util1.class, Util2.class, Util3.class, Util4.class, Util5.class);
+        return archive;
     }
 
-    private JavaArchive getCommonBundle(String identifier) {
-        String[] parts = identifier.split("#");
-        if (parts.length != 2)
-            throw new IllegalArgumentException("Internal test error, invalid common bundle identifier: " + identifier);
+    abstract Deployer getDeploymentProvider();
 
-        final String version = parts[1];
+    abstract BundleContext getBundleContext();
 
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, identifier);
+    void testPerformance(int size) throws Exception {
+        TestBundleProviderImpl testBP = new TestBundleProviderImpl(getDeploymentProvider(), getBundleContext());
+        BundleInstallAndStartBenchmark bm = new BundleInstallAndStartBenchmark(testBP, getBundleContext());
+
+        // There is a problem with concurrent bundle installs it seems
+        // int threads = Runtime.getRuntime().availableProcessors();
+        int threads = 1;
+        bm.run(threads, size / threads);
+
+        File f = new File(getResultsDir(), "testBundlePerf" + size + "-" + System.currentTimeMillis() + ".xml");
+        bm.reportXML(f, new Parameter("Threads", threads), new Parameter("Population", size));
+    }
+
+    /*
+    @ArchiveProvider
+    public static JavaArchive getTestArchive(String name) {
+        return new BundleArchiveProvider().getTestArchive(name);
+    }
+    */
+
+    @Deployment(name = COMMON_BUNDLE_PREFIX, managed = false, testable = false)
+    public static JavaArchive getCommonBundle() {
+        final String version = VERSION_UNDEFINED;
+
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
@@ -85,15 +134,35 @@ public class BundleArchiveProvider {
         return archive;
     }
 
-    private JavaArchive getUtilBundle(String identifier) {
-        String[] parts = identifier.split("#");
-        if (parts.length != 2)
-            throw new IllegalArgumentException("Internal test error, invalid util bundle identifier: " + identifier);
+    @Deployment(name = UTIL_BUNDLE_PREFIX + "1", managed = false, testable = false)
+    public static JavaArchive getUtilBundle1() {
+        return getUtilBundle(1);
+    }
 
-        final int i = Integer.parseInt(parts[1]);
+    @Deployment(name = UTIL_BUNDLE_PREFIX + "2", managed = false, testable = false)
+    public static JavaArchive getUtilBundle2() {
+        return getUtilBundle(2);
+    }
+
+    @Deployment(name = UTIL_BUNDLE_PREFIX + "3", managed = false, testable = false)
+    public static JavaArchive getUtilBundle3() {
+        return getUtilBundle(3);
+    }
+
+    @Deployment(name = UTIL_BUNDLE_PREFIX + "4", managed = false, testable = false)
+    public static JavaArchive getUtilBundle4() {
+        return getUtilBundle(4);
+    }
+
+    @Deployment(name = UTIL_BUNDLE_PREFIX + "5", managed = false, testable = false)
+    public static JavaArchive getUtilBundle5() {
+        return getUtilBundle(5);
+    }
+
+    private static JavaArchive getUtilBundle(final int i) {
         final Class<?> utilClass = getUtilClass(i);
 
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, identifier);
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
@@ -110,7 +179,7 @@ public class BundleArchiveProvider {
         return archive;
     }
 
-    private Class<?> getUtilClass(final int i) {
+    private static Class<?> getUtilClass(final int i) {
         switch (i) {
             case 1:
                 return Util1.class;
@@ -126,14 +195,11 @@ public class BundleArchiveProvider {
         return null;
     }
 
-    private JavaArchive getVersionedIntfBundle(String identifier) {
-        String[] parts = identifier.split("#");
-        if (parts.length != 2)
-            throw new IllegalArgumentException("Internal test error, invalid versioned interfaces bundle identifier: " + identifier);
+    @Deployment(name = VERSIONED_INTF_BUNDLE_PREFIX, managed = false, testable = false)
+    public static JavaArchive getVersionedIntfBundle() {
+        final String version = VERSION_UNDEFINED;
 
-        final String version = parts[1];
-
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, identifier);
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
@@ -149,14 +215,11 @@ public class BundleArchiveProvider {
         return archive;
     }
 
-    private JavaArchive getVersionedImplBundle(String identifier) {
-        String[] parts = identifier.split("#");
-        if (parts.length != 2)
-            throw new IllegalArgumentException("Internal test error, invalid versioned implementation bundle identifier: " + identifier);
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX, managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle() {
+        final int version = -1;
 
-        final int version = Integer.parseInt(parts[1]);
-
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, identifier);
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
@@ -169,8 +232,8 @@ public class BundleArchiveProvider {
                 builder.addImportPackages(CommonClass.class.getPackage().getName() + ";version=\"[" + version + ".0," + version + ".0]\"");
                 builder.addImportPackages(VersionedInterface.class.getPackage().getName() + ";version=\"[" + version + ".0," + version + ".0]\"");
                 builder.addImportPackages(utilClass.getPackage().getName());
-                builder.addExportPackages(VersionedClass.class.getPackage().getName() + ";version=\"" + version + ".0\";uses:=\"" + utilClass.getPackage().getName()
-                        + "\"");
+                builder.addExportPackages(VersionedClass.class.getPackage().getName() + ";version=\"" + version + ".0\";uses:=\""
+                        + utilClass.getPackage().getName() + "\"");
                 return builder.openStream();
             }
         });
@@ -178,20 +241,17 @@ public class BundleArchiveProvider {
         return archive;
     }
 
-    private JavaArchive getTestBundle(String identifier) {
-        String[] parts = identifier.split("#");
-        if (parts.length != 3)
-            throw new IllegalArgumentException("Internal test error, invalid test bundle identifier: " + identifier);
+    @Deployment(name = TEST_BUNDLE_PREFIX, managed = false, testable = false)
+    public static JavaArchive getTestBundle() {
+        final String threadName = "THREAD_NAME";
+        final int counter = -1;
 
-        final String threadName = parts[1];
-        final int counter = Integer.parseInt(parts[2]);
-
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, identifier);
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleSymbolicName(getBSN(threadName, counter));
+                builder.addBundleSymbolicName("Bundle-" + threadName + "-" + counter);
                 builder.addBundleActivator(BundlePerfTestActivator.class.getName());
                 builder.addBundleManifestVersion(2);
                 builder.addImportPackages("org.osgi.framework");
@@ -206,9 +266,5 @@ public class BundleArchiveProvider {
         archive.addClasses(BundlePerfTestActivator.class);
 
         return archive;
-    }
-
-    private static String getBSN(String threadName, int counter) {
-        return "Bundle-" + threadName + "-" + counter;
     }
 }
