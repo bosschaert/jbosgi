@@ -61,7 +61,9 @@ import org.osgi.framework.BundleContext;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public abstract class BundleTestBase extends AbstractPerformanceTestCase {
-    static final String VERSION_UNDEFINED = "999999999";
+    static final String COUNTER_UNDEFINED = "-8888888";
+    static final String THREAD_NAME_UNDEFINED = "THREAD_NAME_UNDEFINED";
+    static final String VERSION_UNDEFINED = "9999999";
 
     @Deployment
     public static JavaArchive createDeployment() {
@@ -215,15 +217,39 @@ public abstract class BundleTestBase extends AbstractPerformanceTestCase {
         return archive;
     }
 
-    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX, managed = false, testable = false)
-    public static JavaArchive getVersionedImplBundle() {
-        final int version = -1;
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX + "Util1", managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle1() {
+        return getVersionedImplBundle(1);
+    }
+
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX + "Util2", managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle2() {
+        return getVersionedImplBundle(2);
+    }
+
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX + "Util3", managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle3() {
+        return getVersionedImplBundle(3);
+    }
+
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX + "Util4", managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle4() {
+        return getVersionedImplBundle(4);
+    }
+
+    @Deployment(name = VERSIONED_IMPL_BUNDLE_PREFIX + "Util5", managed = false, testable = false)
+    public static JavaArchive getVersionedImplBundle5() {
+        return getVersionedImplBundle(5);
+    }
+
+    private static JavaArchive getVersionedImplBundle(final int i) {
+        final String version = VERSION_UNDEFINED;
 
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
             @Override
             public InputStream openStream() {
-                Class<?> utilClass = getUtilClass(version);
+                Class<?> utilClass = getUtilClass(i);
 
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName("VersionedImplBundle" + version);
@@ -243,8 +269,9 @@ public abstract class BundleTestBase extends AbstractPerformanceTestCase {
 
     @Deployment(name = TEST_BUNDLE_PREFIX, managed = false, testable = false)
     public static JavaArchive getTestBundle() {
-        final String threadName = "THREAD_NAME";
-        final int counter = -1;
+        final String threadName = THREAD_NAME_UNDEFINED;
+        final String counter = COUNTER_UNDEFINED;
+        final String version = VERSION_UNDEFINED;
 
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
         archive.setManifest(new Asset() {
@@ -256,10 +283,9 @@ public abstract class BundleTestBase extends AbstractPerformanceTestCase {
                 builder.addBundleManifestVersion(2);
                 builder.addImportPackages("org.osgi.framework");
 
-                int ver = (counter % 5) + 1;
-                builder.addImportPackages(CommonClass.class.getPackage().getName() + ";version=\"[" + ver + ".0," + ver + ".0]\"");
-                builder.addImportPackages(VersionedInterface.class.getPackage().getName() + ";version=\"[" + ver + ".0," + ver + ".0]\"");
-                builder.addImportPackages(VersionedClass.class.getPackage().getName() + ";version=\"[" + ver + ".0," + ver + ".0]\"");
+                builder.addImportPackages(CommonClass.class.getPackage().getName() + ";version=\"[" + version + ".0," + version + ".0]\"");
+                builder.addImportPackages(VersionedInterface.class.getPackage().getName() + ";version=\"[" + version + ".0," + version + ".0]\"");
+                builder.addImportPackages(VersionedClass.class.getPackage().getName() + ";version=\"[" + version + ".0," + version + ".0]\"");
                 return builder.openStream();
             }
         });

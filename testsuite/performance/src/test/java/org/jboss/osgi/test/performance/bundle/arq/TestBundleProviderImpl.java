@@ -31,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,32 +70,81 @@ public class TestBundleProviderImpl implements TestBundleProvider {
             throw new IllegalStateException("Archive name is missing required separator");
 
         String prefix = name.substring(0, idx + 1);
+        // add: suffix
         if (COMMON_BUNDLE_PREFIX.equals(prefix)) {
-            String version = name.substring(idx + 1).trim();
-            File exploded = new File(tempDir, prefix);
-            if (!exploded.isDirectory()) {
-                unJar(deployer.getDeployment(prefix), exploded);
-            }
-
-            Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
-            Attributes attrs = mf.getMainAttributes();
-            for(Map.Entry<Object, Object> entry : new HashSet<Map.Entry<Object, Object>>(attrs.entrySet())) {
-                String newVal = entry.getValue().toString().replaceAll(BundleTestBase.VERSION_UNDEFINED, version);
-                attrs.put(entry.getKey(), newVal);
-            }
-            return jar(exploded, mf);
-
+            return getVersionBasedBundle(name, idx, prefix);
         } else if (TEST_BUNDLE_PREFIX.equals(prefix)) {
-
+            return getTestBundle(name, idx, prefix);
         } else if (UTIL_BUNDLE_PREFIX.equals(prefix)) {
             // There are only 5 of these which are hard coded in the test client.
             return deployer.getDeployment(name);
         } else if (VERSIONED_INTF_BUNDLE_PREFIX.equals(prefix)) {
-
+            return getVersionBasedBundle(name, idx, prefix);
         } else if (VERSIONED_IMPL_BUNDLE_PREFIX.equals(prefix)) {
-
+            return getVersionedImplBundle(name, idx, prefix);
         }
         throw new IllegalStateException("Unexpected archive request: " + name);
+    }
+
+    private InputStream getVersionBasedBundle(String name, int idx,
+            String prefix) throws IOException, FileNotFoundException {
+        String version = name.substring(idx + 1).trim();
+        File exploded = getRawBundleDir(prefix);
+
+        Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
+        Attributes attrs = mf.getMainAttributes();
+        for(Map.Entry<Object, Object> entry : new HashSet<Map.Entry<Object, Object>>(attrs.entrySet())) {
+            String newVal = entry.getValue().toString().replaceAll(BundleTestBase.VERSION_UNDEFINED, version);
+            attrs.put(entry.getKey(), newVal);
+        }
+        return jar(exploded, mf);
+    }
+
+    private InputStream getTestBundle(String name,
+            int idx, String prefix) throws IOException, FileNotFoundException {
+        String suffix = name.substring(idx + 1).trim();
+        String[] parts = suffix.split("#");
+        if (parts.length != 2)
+            throw new IllegalStateException("Incorrect request: " + name);
+
+        String threadName = parts[0];
+        String counter = parts[1];
+        String version = "" + ((Integer.parseInt(counter) % 5) + 1);
+
+        File exploded = getRawBundleDir(prefix);
+        Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
+        Attributes attrs = mf.getMainAttributes();
+        for(Map.Entry<Object, Object> entry : new HashSet<Map.Entry<Object, Object>>(attrs.entrySet())) {
+            String newVal = entry.getValue().toString().replaceAll(BundleTestBase.THREAD_NAME_UNDEFINED, threadName);
+            String newerVal = newVal.replaceAll(BundleTestBase.COUNTER_UNDEFINED, counter);
+            String newestVal = newerVal.replaceAll(BundleTestBase.VERSION_UNDEFINED, version);
+            attrs.put(entry.getKey(), newestVal);
+        }
+        return jar(exploded, mf);
+    }
+
+    private InputStream getVersionedImplBundle(String name, int idx,
+            String prefix) throws IOException, FileNotFoundException {
+        int version = Integer.parseInt(name.substring(idx + 1));
+        File exploded = getRawBundleDir(prefix + "Util" + ((version % 5) + 1));
+
+        Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
+        Attributes attrs = mf.getMainAttributes();
+        for(Map.Entry<Object, Object> entry : new HashSet<Map.Entry<Object, Object>>(attrs.entrySet())) {
+            String newVal = entry.getValue().toString().replaceAll(BundleTestBase.VERSION_UNDEFINED, "" + version);
+            attrs.put(entry.getKey(), newVal);
+        }
+        return jar(exploded, mf);
+    }
+
+    // Returns the directory containing the content of the 'raw' archive which is the archive
+    // that is provided by the deployer before it was modified.
+    private File getRawBundleDir(String prefix) throws IOException {
+        File exploded = new File(tempDir, prefix);
+        if (!exploded.isDirectory()) {
+            unJar(deployer.getDeployment(prefix), exploded);
+        }
+        return exploded;
     }
 
     static Manifest unJar(InputStream jarStream, File tempDir) throws IOException {
