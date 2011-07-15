@@ -23,37 +23,38 @@ package org.jboss.osgi.test.performance.bundle.arq;
 
 import javax.inject.Inject;
 
-import org.jboss.arquillian.api.DeploymentProvider;
+import org.jboss.arquillian.container.test.api.Deployer;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.BundleContext;
 
 /**
  * Split off in a separate class to enable Maven to run this in a separate VM instance.
- * 
+ *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 @RunWith(Arquillian.class)
-public class Bundle500TestCase extends BundleTestBase {
-    @Inject
-    public DeploymentProvider provider;
+public class Bundle750TestCase extends BundleTestBase {
+    @ArquillianResource
+    public Deployer deployer;
 
     @Inject
     public BundleContext bundleContext;
+
+    @Override
+    Deployer getDeploymentProvider() {
+        return deployer;
+    }
 
     @Override
     BundleContext getBundleContext() {
         return bundleContext;
     }
 
-    @Override
-    DeploymentProvider getDeploymentProvider() {
-        return provider;
-    }
-
     @Test
-    public void test500Bundles() throws Exception {
-        testPerformance(500);
+    public void test750Bundles() throws Exception {
+        testPerformance(750);
     }
 }
