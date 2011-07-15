@@ -108,13 +108,6 @@ public abstract class BundleTestBase extends AbstractPerformanceTestCase {
         bm.reportXML(f, new Parameter("Threads", threads), new Parameter("Population", size));
     }
 
-    /*
-    @ArchiveProvider
-    public static JavaArchive getTestArchive(String name) {
-        return new BundleArchiveProvider().getTestArchive(name);
-    }
-    */
-
     @Deployment(name = COMMON_BUNDLE_PREFIX, managed = false, testable = false)
     public static JavaArchive getCommonBundle() {
         final String version = VERSION_UNDEFINED;

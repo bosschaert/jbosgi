@@ -20,6 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 package org.jboss.osgi.test.performance.bundle.arq;
+
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.COMMON_BUNDLE_PREFIX;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.PREFIX_SEPARATOR;
 import static org.jboss.osgi.test.performance.bundle.BundleInstallAndStartBenchmark.TEST_BUNDLE_PREFIX;
@@ -70,25 +71,23 @@ public class TestBundleProviderImpl implements TestBundleProvider {
             throw new IllegalStateException("Archive name is missing required separator");
 
         String prefix = name.substring(0, idx + 1);
-        // add: suffix
+        String suffix = name.substring(idx + 1).trim();
         if (COMMON_BUNDLE_PREFIX.equals(prefix)) {
-            return getVersionBasedBundle(name, idx, prefix);
+            return getVersionBasedBundle(prefix, suffix);
         } else if (TEST_BUNDLE_PREFIX.equals(prefix)) {
-            return getTestBundle(name, idx, prefix);
+            return getTestBundle(prefix, suffix);
         } else if (UTIL_BUNDLE_PREFIX.equals(prefix)) {
             // There are only 5 of these which are hard coded in the test client.
             return deployer.getDeployment(name);
         } else if (VERSIONED_INTF_BUNDLE_PREFIX.equals(prefix)) {
-            return getVersionBasedBundle(name, idx, prefix);
+            return getVersionBasedBundle(prefix, suffix);
         } else if (VERSIONED_IMPL_BUNDLE_PREFIX.equals(prefix)) {
-            return getVersionedImplBundle(name, idx, prefix);
+            return getVersionedImplBundle(prefix, suffix);
         }
         throw new IllegalStateException("Unexpected archive request: " + name);
     }
 
-    private InputStream getVersionBasedBundle(String name, int idx,
-            String prefix) throws IOException, FileNotFoundException {
-        String version = name.substring(idx + 1).trim();
+    private InputStream getVersionBasedBundle(String prefix, String version) throws IOException, FileNotFoundException {
         File exploded = getRawBundleDir(prefix);
 
         Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
@@ -100,12 +99,10 @@ public class TestBundleProviderImpl implements TestBundleProvider {
         return jar(exploded, mf);
     }
 
-    private InputStream getTestBundle(String name,
-            int idx, String prefix) throws IOException, FileNotFoundException {
-        String suffix = name.substring(idx + 1).trim();
+    private InputStream getTestBundle(String prefix, String suffix) throws IOException, FileNotFoundException {
         String[] parts = suffix.split("#");
         if (parts.length != 2)
-            throw new IllegalStateException("Incorrect request: " + name);
+            throw new IllegalStateException("Incorrect request: " + prefix + suffix);
 
         String threadName = parts[0];
         String counter = parts[1];
@@ -123,9 +120,8 @@ public class TestBundleProviderImpl implements TestBundleProvider {
         return jar(exploded, mf);
     }
 
-    private InputStream getVersionedImplBundle(String name, int idx,
-            String prefix) throws IOException, FileNotFoundException {
-        int version = Integer.parseInt(name.substring(idx + 1));
+    private InputStream getVersionedImplBundle(String prefix, String suffix) throws IOException, FileNotFoundException {
+        int version = Integer.parseInt(suffix);
         File exploded = getRawBundleDir(prefix + "Util" + (((version - 1) % 5) + 1));
 
         Manifest mf = new Manifest(new FileInputStream(new File(exploded, "META-INF/MANIFEST.MF")));
@@ -217,16 +213,6 @@ public class TestBundleProviderImpl implements TestBundleProvider {
             return;
 
         if (source.isDirectory()) {
-            /* Is there any point in adding a directory beyond just taking up space?
-            if (!sourceName.isEmpty()) {
-                if (!sourceName.endsWith("/")) {
-                    sourceName += "/";
-                }
-                JarEntry entry = new JarEntry(sourceName);
-                jar.putNextEntry(entry);
-                jar.closeEntry();
-            }
-            */
             for (File nested : source.listFiles()) {
                 addToJarRecursively(jar, nested, rootDirectory);
             }
