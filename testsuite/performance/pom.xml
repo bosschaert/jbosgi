@@ -114,10 +114,31 @@
       <build>
         <plugins>
           <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>compendium</id>
+                <phase>test-compile</phase>
+                <goals>
+                  <goal>directory-single</goal>
+                </goals>
+                <configuration>
+                  <finalName>test-libs</finalName>
+                  <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <descriptors>
+                    <descriptor>scripts/assembly-compendium.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>        
+
+          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>-da -Xms1024m -Xmx1536m ${surefire.jpda.args} ${surefire.profiler.args}</argLine>
+              <argLine>-da -Xms1024m -Xmx1536m -Dframework=${framework}</argLine>
               <forkMode>always</forkMode>
               <useSystemClassLoader>true</useSystemClassLoader>
               <useManifestOnlyJar>false</useManifestOnlyJar>
