@@ -33,16 +33,17 @@ import org.osgi.service.jndi.JNDIContextManager;
 public class NamingSupport extends RepositorySupport {
     public static final String APACHE_ARIES_JNDI = "org.apache.aries.jndi:org.apache.aries.jndi";
 
-    public static void provideJNDIIntegration(BundleContext syscontext, Bundle bundle) throws BundleException {
-        AriesSupport.provideAriesUtil(syscontext, bundle);
+    public static JNDIContextManager provideJNDIIntegration(BundleContext syscontext, Bundle bundle) throws BundleException {
+        ServiceReference sref = syscontext.getServiceReference(JNDIContextManager.class.getName());
+        if (sref == null) {
+            AriesSupport.provideAriesUtil(syscontext, bundle);
 
-        // Version 0.3.1 of Aries JNDI depends on Aries Blueprint.
-        BlueprintSupport.provideBlueprint(syscontext, bundle);
+            // Version 0.3.1 of Aries JNDI depends on Aries Blueprint.
+            BlueprintSupport.provideBlueprint(syscontext, bundle);
 
-        ServiceReference ref = syscontext.getServiceReference(JNDIContextManager.class.getName());
-        if (ref == null) {
-            Bundle b = installSupportBundle(syscontext, getCoordinates(bundle, APACHE_ARIES_JNDI));
-            b.start();
+            installSupportBundle(syscontext, getCoordinates(bundle, APACHE_ARIES_JNDI)).start();
+            sref = syscontext.getServiceReference(JNDIContextManager.class.getName());
         }
+        return (JNDIContextManager) syscontext.getService(sref);
     }
 }

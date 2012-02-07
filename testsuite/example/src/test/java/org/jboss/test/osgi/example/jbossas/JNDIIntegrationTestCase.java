@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.resource.Resource;
 import org.osgi.service.jndi.JNDIContextManager;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -86,9 +85,8 @@ public class JNDIIntegrationTestCase {
 
     @Test
     public void testOSGiNamingContext() throws Exception {
-        NamingSupport.provideJNDIIntegration(context, bundle);
+        JNDIContextManager mgr = NamingSupport.provideJNDIIntegration(context, bundle);
 
-        JNDIContextManager mgr = getJNDIContextManager();
         Context ictx = mgr.newInitialContext();
 
         Object jbossContext = ictx.lookup("java:jboss");
@@ -103,22 +101,5 @@ public class JNDIIntegrationTestCase {
             count++;
         }
         Assert.assertTrue("Should be at least one ObjectFactory found", count > 0);
-    }
-
-    private JNDIContextManager getJNDIContextManager() throws Exception {
-        int timeoutSeconds = 10;
-        while (timeoutSeconds > 0) {
-            ServiceReference ref = context.getServiceReference(JNDIContextManager.class.getName());
-            if (ref != null) {
-                Object svc = context.getService(ref);
-                if (svc instanceof JNDIContextManager) {
-                    return (JNDIContextManager) svc;
-                }
-            }
-
-            Thread.sleep(1000);
-            timeoutSeconds--;
-        }
-        throw new RuntimeException("Unable to obtain JNDI Context Manager Service");
     }
 }

@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.resource.Resource;
 import org.osgi.service.jndi.JNDIContextManager;
 import org.osgi.service.packageadmin.ExportedPackage;
@@ -89,9 +88,7 @@ public class JNDITestCase {
 
     @Test
     public void testOSGiNamingContext() throws Exception {
-        NamingSupport.provideJNDIIntegration(context, bundle);
-
-        JNDIContextManager mgr = getJNDIContextManager();
+        JNDIContextManager mgr = NamingSupport.provideJNDIIntegration(context, bundle);
 
         // Get the InitialContext and lookup the PackageAdmin OSGi service through JNDI
         Context ictx = mgr.newInitialContext();
@@ -101,22 +98,5 @@ public class JNDITestCase {
         PackageAdmin pa = (PackageAdmin) viaJNDI;
         ExportedPackage ep = pa.getExportedPackage(MyInterface.class.getPackage().getName());
         Assert.assertEquals(bundle, ep.getExportingBundle());
-    }
-
-    private JNDIContextManager getJNDIContextManager() throws Exception {
-        int timeoutSeconds = 10;
-        while (timeoutSeconds > 0) {
-            ServiceReference ref = context.getServiceReference(JNDIContextManager.class.getName());
-            if (ref != null) {
-                Object svc = context.getService(ref);
-                if (svc instanceof JNDIContextManager) {
-                    return (JNDIContextManager) svc;
-                }
-            }
-
-            Thread.sleep(1000);
-            timeoutSeconds--;
-        }
-        throw new RuntimeException("Unable to obtain JNDI Context Manager Service");
     }
 }
