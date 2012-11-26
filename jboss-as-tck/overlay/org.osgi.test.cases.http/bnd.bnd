@@ -26,6 +26,6 @@ Test-Cases							= ${testcases}
 
 
 -runproperties = report=true, \
-jboss.home="@jboss-as-build-location@", \
+jboss.home="@jboss-as-dir@/build/target/@jboss-as-buildname@", \
 	org.osgi.service.http.hostname=127.0.0.1, \
 	org.osgi.service.http.port=8080
