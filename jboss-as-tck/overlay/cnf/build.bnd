@@ -109,7 +109,7 @@ junit					= com.springsource.junit;version=3.8;export="${junit.package}"
     @jboss-msc@;version=file, \
     @jboss-osgi-core@;version=file, \
     @jboss-osgi-launcher@;version=file, \
-    @jboss-as-dir@/osgi/tck/lib/osgix.jar;version=file, \
+    @tck-integration-dir@/lib/osgix.jar;version=file, \
 	${junit}
 
 # Use the following for 4.3 framework RI development	
@@ -128,7 +128,7 @@ junit					= com.springsource.junit;version=3.8;export="${junit.package}"
 #	${junit}
 
 runproperties = report=true, \
-        jboss.home="@jboss-as-dir@/build/target/@jboss-as-buildname@", \
+    jboss.home="@jboss-as-build-location@", \
 	osgi.compatibility.bootdelegation=false, \
 	osgi.resolverMode=strict, \
 	osgi.support.multipleHosts=true
