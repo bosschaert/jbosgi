@@ -34,13 +34,11 @@ echo JBOSS_AS_LOCATION: $JBOSS_AS_LOCATION
 ant setup.vi
 
 # Run the core tests
-ant run-core-tests
-      
-# Run the package admin tests
-#ant run-packageadmin-tests
-
-# Run the HTTP Service tests
-#ant run-httpservice-tests
+echo
+echo "********************************************************************************"
+echo
+echo The OSGi TCK tests can now be run by running any of the following ant targets:
+ant -projecthelp | grep run-
 
 fi
 fi
