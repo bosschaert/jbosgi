@@ -31,6 +31,7 @@ echo TCK Checkout directory: $TCKCHECKOUT
 echo JBOSS_AS_LOCATION: $JBOSS_AS_LOCATION
 
 # Setup the TCK
+# The current script is known to work with the r4v42-enterprise-ri-ct-final tag of the osgi TCK repository
 ant setup.vi
 
 # Run the core tests
