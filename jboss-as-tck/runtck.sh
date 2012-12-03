@@ -1,8 +1,8 @@
-if [ "$3" == "" ] 
+if [ "$4" == "" ] 
 then
     echo Please provide the OSGi TCK location, the jboss-as build location, and the
     echo location of the jboss-as-osgi-launcher.jar file, e.g.
-    echo  $0 ./osgitck/ /jboss-as/jboss-as-7.2.0 /jboss-as/osgi/launcher/target/jboss-as-osgi-launcher-7.2.0.jar
+    echo  $0 ./osgitck/ /jboss-as/jboss-as-7.2.0 /jboss-as/osgi/launcher/target/jboss-as-osgi-launcher-7.2.0.jar run-httpservice-tests
 else
     if [ ! -d "$2/modules" ]
     then
@@ -34,12 +34,8 @@ echo JBOSS_AS_LOCATION: $JBOSS_AS_LOCATION
 # The current script is known to work with the r4v42-enterprise-ri-ct-final tag of the osgi TCK repository
 ant setup.vi
 
-# Run the core tests
-echo
-echo "********************************************************************************"
-echo
-echo The OSGi TCK tests can now be run by running any of the following ant targets:
-ant -projecthelp | grep run-
+# Run the actual tests
+ant $4
 
 fi
 fi
